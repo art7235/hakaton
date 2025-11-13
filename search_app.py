@@ -3,6 +3,7 @@
 """
 
 import pygame
+import os
 from person import Person
 from helpers import *
 from ui_components import UIComponents
@@ -22,10 +23,13 @@ class SearchApp:
         self.active_screen = "main"
         self.selected_person = None
         self.connection_threshold = CONNECTION_THRESHOLD
+        self.ads_data = []
+        self.ads_buttons = []
 
         self.create_it_ecosystem()
         self.calculate_all_connections()
         self.filtered_people = self.people.copy()
+        self.load_ads()
 
     def create_it_ecosystem(self):
         """Создает начальный набор данных."""
@@ -92,6 +96,36 @@ class SearchApp:
             person = Person(**data)
             self.people.append(person)
 
+    def load_ads(self):
+        """Загружает рекламные материалы."""
+        self.ads_data = [
+            {
+                "id": "contrast",
+                "type": "image",
+                "surface": self.load_ad_image("contrast")
+            },
+            {
+                "id": "rock_band",
+                "type": "image",
+                "surface": self.load_ad_image("rock_band")
+            },
+            {
+                "id": "your_ad",
+                "type": "placeholder"
+            }
+        ]
+
+    def load_ad_image(self, ad_name):
+        """Загружает рекламное изображение."""
+        try:
+            image_path = ADS_PATHS.get(ad_name)
+            if image_path and image_path != "placeholder" and os.path.exists(image_path):
+                image = pygame.image.load(image_path)
+                return pygame.transform.scale(image, (240, 100))
+        except Exception as e:
+            print(f"Ошибка загрузки рекламы {ad_name}: {e}")
+        return None
+
     def calculate_all_connections(self):
         """Вычисляет все связи между людьми."""
         print("Вычисление автоматических связей...")
@@ -149,23 +183,27 @@ class SearchApp:
 
         self.draw_background()
 
-        # Увеличиваем отступы для симметрии - теперь 80px с каждой стороны
-        content_margin = 80
-        content_width = WIDTH - 2 * content_margin
-        content_rect = pygame.Rect(content_margin, 40, content_width, HEIGHT - 80)
+        # Центрируем окно
+        content_width = min(1200, WIDTH - 160)
+        content_height = HEIGHT - 160
+        content_x = (WIDTH - content_width) // 2
+        content_y = 80
+
+        content_rect = pygame.Rect(content_x, content_y, content_width, content_height)
         pygame.draw.rect(self.screen, WHITE, content_rect)
         pygame.draw.rect(self.screen, BLACK, content_rect, 2)
 
-        back_button = pygame.Rect(content_margin + 20, 50, 100, 40)
+        # Кнопка "Назад"
+        back_button = pygame.Rect(content_x + 20, content_y + 20, 100, 40)
         pygame.draw.rect(self.screen, BLUE, back_button)
         back_text = FONT_MEDIUM.render("Назад", True, WHITE)
         text_rect = back_text.get_rect(center=back_button.center)
         self.screen.blit(back_text, text_rect)
 
-        # Отступы внутри белого контейнера
+        # Внутренние отступы
         inner_margin = 40
-        info_x = content_margin + inner_margin  # 80 + 40 = 120px от левого края экрана
-        info_y = 120
+        info_x = content_x + inner_margin
+        info_y = content_y + 100
 
         photo_rect = pygame.Rect(info_x, info_y, 180, 180)
         if person.photo_large is not None:
@@ -193,8 +231,8 @@ class SearchApp:
         conn_count_text = FONT_MEDIUM.render(f"Автоматических связей: {len(person.connections)}", True, PURPLE)
         self.screen.blit(conn_count_text, (text_x, info_y + 160))
 
-        # Ширина текста с учетом всех отступов
-        text_width = content_width - 2 * inner_margin - 200  # Учитываем фото и отступы
+        # Ширина текста с учетом внутренних отступов
+        text_width = content_width - 2 * inner_margin - 200
 
         desc_y = info_y + 200
         desc_title = FONT_MEDIUM.render("Описание:", True, BLACK)
@@ -215,7 +253,8 @@ class SearchApp:
 
         for connected_person, weight in connected_people:
             # Проверяем, помещается ли кнопка в текущей строке
-            if button_x + 250 > content_margin + content_width - inner_margin:
+            max_button_x = content_x + content_width - inner_margin - 240
+            if button_x > max_button_x:
                 button_x = info_x
                 button_y += 40
 
@@ -282,6 +321,9 @@ class SearchApp:
                     detail_button = self.ui.draw_person_card(person, 50, card_y, card_width, 110)
                     detail_buttons.append((person, detail_button))
 
+                # Отрисовываем рекламу
+                self.ads_buttons = self.ui.draw_ads_panel(self.ads_data)
+
                 total_pages = (len(self.filtered_people) + self.people_per_page - 1) // self.people_per_page
                 pagination_buttons = self.ui.draw_pagination(self.current_page, total_pages)
 
@@ -316,6 +358,11 @@ class SearchApp:
                             if button.collidepoint(mouse_pos):
                                 self.selected_person = person
                                 self.active_screen = "detail"
+
+                        # Обработка кликов по рекламе
+                        for ad_id, ad_rect in self.ads_buttons:
+                            if ad_rect.collidepoint(mouse_pos):
+                                print(f"Клик по рекламе: {ad_id}")
 
                         for button_type, button_rect in pagination_buttons:
                             if button_rect.collidepoint(mouse_pos):

@@ -43,3 +43,10 @@ PHOTO_PATHS = {
     "Артем Инютин": os.path.join("assets", "person6.jpg"),
     "Герман Греф": os.path.join("assets", "person7.jpg")
 }
+
+# Пути к рекламным изображениям
+ADS_PATHS = {
+    "contrast": os.path.join("assets", "ads", "contrast.jpg"),
+    "rock_band": os.path.join("assets", "ads", "rock_band.jpg"),
+    "your_ad": "placeholder"
+}

@@ -87,3 +87,49 @@ class UIComponents:
         self.screen.blit(page_text, page_rect)
 
         return buttons
+
+    def draw_ads_panel(self, ads_data):
+        """Отрисовывает панель с рекламой справа."""
+        ads_width = 280
+        # Сдвигаем рекламу ближе к списку людей - начинаем сразу после карточек
+        ads_x = 50 + 900 + 20  # 50 (отступ карточек) + 900 (ширина карточек) + 20 (отступ)
+        ads_y = 120
+
+        # Фон панели
+        ads_panel = pygame.Rect(ads_x, ads_y, ads_width, HEIGHT - ads_y - 100)
+        pygame.draw.rect(self.screen, LIGHT_GRAY, ads_panel)
+        pygame.draw.rect(self.screen, BLACK, ads_panel, 1)
+
+        # Заголовок
+        ads_title = FONT_MEDIUM.render("Рекомендуем", True, BLACK)
+        self.screen.blit(ads_title, (ads_x + 20, ads_y + 20))
+
+        ads_buttons = []
+        current_y = ads_y + 60
+
+        for i, ad in enumerate(ads_data):
+            # Рекламный блок
+            ad_rect = pygame.Rect(ads_x + 20, current_y, ads_width - 40, 120)
+            pygame.draw.rect(self.screen, WHITE, ad_rect)
+            pygame.draw.rect(self.screen, BLACK, ad_rect, 1)
+
+            if ad["type"] == "image" and ad.get("surface"):
+                img_rect = ad["surface"].get_rect(center=(ad_rect.centerx, ad_rect.centery))
+                self.screen.blit(ad["surface"], img_rect)
+            elif ad["type"] == "placeholder":
+                placeholder_rect = pygame.Rect(ad_rect.x + 10, ad_rect.y + 10, ad_rect.width - 20, ad_rect.height - 20)
+                pygame.draw.rect(self.screen, GRAY, placeholder_rect)
+
+                text = FONT_SMALL.render("Здесь может быть", True, BLACK)
+                text2 = FONT_SMALL.render("ваша реклама", True, BLACK)
+
+                text_rect = text.get_rect(center=(placeholder_rect.centerx, placeholder_rect.centery - 10))
+                text2_rect = text2.get_rect(center=(placeholder_rect.centerx, placeholder_rect.centery + 10))
+
+                self.screen.blit(text, text_rect)
+                self.screen.blit(text2, text2_rect)
+
+            ads_buttons.append((ad["id"], ad_rect))
+            current_y += 140
+
+        return ads_buttons
